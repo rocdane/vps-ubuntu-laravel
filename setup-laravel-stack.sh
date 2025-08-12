@@ -83,6 +83,9 @@ setup_firewall() {
 install_php() {
     log "Ajout du dépôt PHP..."
 
+    #curl -sSLo /usr/share/keyrings/sury-php-archive-keyring.gpg https://packages.sury.org/php/apt.gpg
+    #echo "deb [signed-by=/usr/share/keyrings/sury-php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/sury-php.list
+    
     mkdir -p /usr/share/keyrings
     curl -sSLo /usr/share/keyrings/sury-php-archive-keyring.gpg https://packages.sury.org/php/apt.gpg || error "Échec du téléchargement de la clé GPG"
 
