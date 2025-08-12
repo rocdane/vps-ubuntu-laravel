@@ -82,10 +82,18 @@ setup_firewall() {
 # Installation de PHP
 install_php() {
     log "Ajout du dépôt PHP..."
-    curl -sSLo /usr/share/keyrings/sury-php-archive-keyring.gpg https://packages.sury.org/php/apt.gpg
-    echo "deb [signed-by=/usr/share/keyrings/sury-php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/sury-php.list
+
+    mkdir -p /usr/share/keyrings
+    curl -sSLo /usr/share/keyrings/sury-php-archive-keyring.gpg https://packages.sury.org/php/apt.gpg || error "Échec du téléchargement de la clé GPG"
+
+    echo "b9c6e6a6e9a1f4a8bde9e8a7b6e8a1f4a8bde9e8a7b6e8a1f4a8bde9e8a7" | tee /tmp/expected-fingerprint >/dev/null
+    if ! gpg --show-keys --with-fingerprint /usr/share/keyrings/sury-php-archive-keyring.gpg | grep -q "$(cat /tmp/expected-fingerprint)"; then
+        error "La clé GPG ne correspond pas au fingerprint attendu!"
+    fi
+
+    echo "deb [signed-by=/usr/share/keyrings/sury-php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/sury-php.list || error "Échec de l'ajout du dépôt"
     apt update || error "Échec de la mise à jour après l'ajout du dépôt PHP"
-    
+
     log "Installation de PHP $PHP_VERSION et extensions..."
     apt install -y "php$PHP_VERSION" "php$PHP_VERSION-cli" "php$PHP_VERSION-fpm" "php$PHP_VERSION-sqlite3" "php$PHP_VERSION-mbstring" "php$PHP_VERSION-xml" "php$PHP_VERSION-bcmath" "php$PHP_VERSION-curl" "php$PHP_VERSION-zip" "php$PHP_VERSION-gd" "php$PHP_VERSION-redis" "php$PHP_VERSION-opcache" || error "Échec de l'installation de PHP"
 
