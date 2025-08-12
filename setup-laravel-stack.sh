@@ -7,9 +7,9 @@
 
 # Configuration
 DB_ENGINE="postgresql" # Options: postgresql, mysql
-APP_USER="deployer"
-APP_NAME="laravel_app"
-APP_DOMAIN="votredomaine.com"
+APP_USER="devops"
+APP_NAME="laravel"
+APP_DOMAIN="mydomaine.com"
 APP_ROOT="/var/www/html"
 PHP_VERSION="8.3"
 NODE_VERSION="24"
@@ -84,13 +84,13 @@ install_php() {
     log "Ajout du dépôt PHP..."
     add-apt-repository -y ppa:ondrej/php || error "Échec de l'ajout du dépôt PHP"
     apt update || error "Échec de la mise à jour après l'ajout du dépôt PHP"
-
-    log "Installation du package SQLite3 système..."
-    apt install -y sqlite3 libsqlite3-dev || error "Échec de l'installation de SQLite3 système"
     
     log "Installation de PHP $PHP_VERSION et extensions..."
     apt install -y "php$PHP_VERSION" "php$PHP_VERSION-cli" "php$PHP_VERSION-fpm" "php$PHP_VERSION-sqlite3" "php$PHP_VERSION-mbstring" "php$PHP_VERSION-xml" "php$PHP_VERSION-bcmath" "php$PHP_VERSION-curl" "php$PHP_VERSION-zip" "php$PHP_VERSION-gd" "php$PHP_VERSION-redis" "php$PHP_VERSION-opcache" || error "Échec de l'installation de PHP"
-    
+
+    log "Installation du package SQLite3 système..."
+    apt install -y sqlite3 libsqlite3-dev || error "Échec de l'installation de SQLite3 système"
+        
     # Installation des extensions de base de données en fonction du choix
     if [ "$DB_ENGINE" = "postgresql" ]; then
         apt install -y "php$PHP_VERSION-pgsql" || error "Échec de l'installation de l'extension PostgreSQL pour PHP"
