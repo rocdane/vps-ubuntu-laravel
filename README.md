@@ -159,5 +159,5 @@ sudo ./config.sh
 
 Pour toute question ou problème, consultez la documentation officielle de :
 
-[Laravel](https://laravel.com/docs)
-[Ubuntu Server](https://laravel.com/docs)
+- [Laravel](https://laravel.com/docs)
+- [Ubuntu Server](https://laravel.com/docs)
