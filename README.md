@@ -88,11 +88,24 @@ apt install -y mysql-server
 
 ### Nginx
 
+- Configuration du virtual host pour Laravel
+- Optimisation des paramètres de performance
+- Configuration SSL (si certificat disponible)
+
 ### PostgreSQL/MySQL
+
+- Création de l'utilisateur et de la base de données
+- Configuration des accès sécurisés
 
 ### Supervisor
 
+- Configuration pour les queues Laravel
+- Gestion des processus workers
+
 ### PHP-FPM
+
+- Optimisation des paramètres pour la production
+- Configuration des pools
 
 ## [Optimisation Laravel](optimisation-laravel)
 
