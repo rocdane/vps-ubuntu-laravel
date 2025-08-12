@@ -48,12 +48,13 @@ install_basic_dependencies() {
 # Configuration de l'utilisateur
 setup_user() {
     if id "$APP_USER" &>/dev/null; then
-        log "L'utilisateur $APP_USER existe déjà"
+        log "L'utilisateur $APP_USER existe déjà - mise à jour des configurations"
+        usermod -aG sudo "$APP_USER" || echo "Avertissement: Impossible d'ajouter l'utilisateur au groupe sudo (peut déjà être membre)"
     else
         log "Création de l'utilisateur $APP_USER..."
-        adduser --disabled-password --gecos "" "$APP_USER" || error "Échec de la création de l'utilisateur"
-        usermod -aG sudo "$APP_USER" || error "Échec de l'ajout de l'utilisateur au groupe sudo"
-        
+        adduser --disabled-password --gecos "" "$APP_USER" || error "Échec critique de la création de l'utilisateur"
+        usermod -aG sudo "$APP_USER" || error "Échec critique de l'ajout au groupe sudo"
+
         # Copie des clés SSH
         if [ -d "/root/.ssh" ]; then
             mkdir -p "/home/$APP_USER/.ssh"
@@ -108,18 +109,29 @@ install_database() {
         apt install -y postgresql postgresql-contrib || error "Échec de l'installation de PostgreSQL"
         
         log "Configuration de PostgreSQL pour Laravel..."
-        sudo -u postgres psql -c "CREATE USER $APP_USER WITH PASSWORD 'temp_password';" || error "Échec de la création de l'utilisateur PostgreSQL"
-        sudo -u postgres psql -c "CREATE DATABASE $APP_NAME WITH OWNER $APP_USER ENCODING 'UTF8' LC_COLLATE 'fr_FR.utf8' LC_CTYPE 'fr_FR.utf8';" || error "Échec de la création de la base de données PostgreSQL"
+        # Version améliorée avec gestion d'erreur idempotente
+        sudo -u postgres psql -v ON_ERROR_STOP=0 -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$APP_USER') THEN
+                CREATE ROLE $APP_USER WITH LOGIN PASSWORD 'temp_password';
+                RAISE NOTICE 'Utilisateur $APP_USER créé avec succès';
+            ELSE
+                ALTER ROLE $APP_USER WITH PASSWORD 'temp_password';
+                RAISE NOTICE 'Utilisateur $APP_USER existe déjà, mot de passe mis à jour';
+            END IF;
+        END \$\$;" || echo "Avertissement: Gestion de l'utilisateur PostgreSQL (peut déjà exister)"
+        
+        sudo -u postgres psql -v ON_ERROR_STOP=0 -c "CREATE DATABASE $APP_NAME WITH OWNER $APP_USER ENCODING 'UTF8' LC_COLLATE 'fr_FR.utf8' LC_CTYPE 'fr_FR.utf8';" || echo "Avertissement: La base de données existe peut-être déjà"
         
     elif [ "$DB_ENGINE" = "mysql" ]; then
         log "Installation de MySQL..."
         apt install -y mysql-server || error "Échec de l'installation de MySQL"
         
         log "Configuration de MySQL pour Laravel..."
-        mysql -e "CREATE DATABASE $APP_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" || error "Échec de la création de la base de données MySQL"
-        mysql -e "CREATE USER '$APP_USER'@'localhost' IDENTIFIED BY 'temp_password';" || error "Échec de la création de l'utilisateur MySQL"
-        mysql -e "GRANT ALL PRIVILEGES ON $APP_NAME.* TO '$APP_USER'@'localhost';" || error "Échec de l'attribution des privilèges MySQL"
-        mysql -e "FLUSH PRIVILEGES;" || error "Échec du rechargement des privilèges MySQL"
+        # Version idempotente pour MySQL
+        mysql -e "CREATE DATABASE IF NOT EXISTS $APP_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" || echo "Avertissement: La base de données existe peut-être déjà"
+        mysql -e "CREATE USER IF NOT EXISTS '$APP_USER'@'localhost' IDENTIFIED BY 'temp_password';" || echo "Avertissement: L'utilisateur existe peut-être déjà"
+        mysql -e "GRANT ALL PRIVILEGES ON $APP_NAME.* TO '$APP_USER'@'localhost';" || echo "Avertissement: Problème d'attribution des privilèges"
+        mysql -e "FLUSH PRIVILEGES;" || echo "Avertissement: Problème de rechargement des privilèges"
     fi
 }
 
