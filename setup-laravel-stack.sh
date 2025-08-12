@@ -82,7 +82,8 @@ setup_firewall() {
 # Installation de PHP
 install_php() {
     log "Ajout du dépôt PHP..."
-    add-apt-repository -y ppa:ondrej/php || error "Échec de l'ajout du dépôt PHP"
+    curl -sSLo /usr/share/keyrings/sury-php-archive-keyring.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb [signed-by=/usr/share/keyrings/sury-php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/sury-php.list
     apt update || error "Échec de la mise à jour après l'ajout du dépôt PHP"
     
     log "Installation de PHP $PHP_VERSION et extensions..."
