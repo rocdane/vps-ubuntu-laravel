@@ -343,7 +343,7 @@ install_mysql() {
     log "Installation de MySQL..."
     
     export DEBIAN_FRONTEND=noninteractive
-    apt-get install -y -qq mysql-server
+    apt-get install -y -qq mariadb-server
     
     # Sécurisation MySQL
     mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD:-TempPassword123!}';"
