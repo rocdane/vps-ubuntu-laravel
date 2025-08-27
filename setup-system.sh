@@ -59,15 +59,23 @@ check_root() {
 
 create_user() {
     local username="$1"
-    if ! id "$username" &>/dev/null; then
-        log "Création de l'utilisateur $username"
-        useradd -m -s /bin/bash "$username"
-        usermod -aG sudo "$username"
-        mkdir -p "/home/$username/.ssh"
-        chmod 700 "/home/$username/.ssh"
-        chown "$username:$username" "/home/$username/.ssh"
+    if id "$username" &>/dev/null; then
+        log "L'utilisateur $username existe déjà - mise à jour des configurations"
+        usermod -aG sudo "$username" || echo "Avertissement: Impossible d'ajouter l'utilisateur au groupe sudo (peut déjà être membre)"
     else
-        info "L'utilisateur $username existe déjà"
+        log "Création de l'utilisateur $username..."
+        adduser --disabled-password --gecos "" "$username" || error "Échec critique de la création de l'utilisateur"
+        usermod -aG sudo "$username" || error "Échec critique de l'ajout au groupe sudo"
+
+        # Copie des clés SSH
+        if [ -d "/root/.ssh" ]; then
+            mkdir -p "/home/$username/.ssh"
+            cp /root/.ssh/authorized_keys "/home/$username/.ssh/"
+            chown -R "$username:$username" "/home/$username/.ssh"
+            chmod 700 "/home/$username/.ssh"
+            chmod 600 "/home/$username/.ssh/authorized_keys"
+            log "Clés SSH copiées pour l'utilisateur $username"
+        fi
     fi
 }
 
