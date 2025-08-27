@@ -339,37 +339,46 @@ install_nodejs() {
 # INSTALLATION MYSQL
 #==============================================================================
 
-install_mysql() {
-    log "Installation de MySQL..."
+install_mariadb() {
+    log "Installation de MariaDB..."
     
     export DEBIAN_FRONTEND=noninteractive
-    apt-get install -y -qq mariadb-server
     
-    # Sécurisation MySQL
-    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD:-TempPassword123!}';"
-    mysql -e "DELETE FROM mysql.user WHERE User='';"
-    mysql -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
-    mysql -e "DROP DATABASE IF EXISTS test;"
-    mysql -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
-    mysql -e "FLUSH PRIVILEGES;"
+    # Installation de MariaDB
+    apt-get update
+    apt-get install -y -qq mariadb-server mariadb-client
     
-    # Configuration optimisée
-    cat >> /etc/mysql/mysql.conf.d/mysqld.cnf << 'EOF'
+    # Démarrer le service
+    systemctl start mariadb
+    systemctl enable mariadb
+    
+    # Attendre que MariaDB soit complètement démarré
+    sleep 5
+    
+    # Sécurisation manuelle de MariaDB (sans mysql_secure_installation)
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD:-TempPassword123!}';"
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD:-TempPassword123!}" -e "DELETE FROM mysql.user WHERE User='';"
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD:-TempPassword123!}" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD:-TempPassword123!}" -e "DROP DATABASE IF EXISTS test;"
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD:-TempPassword123!}" -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD:-TempPassword123!}" -e "FLUSH PRIVILEGES;"
+    
+    # Configuration optimisée pour MariaDB
+    cat >> /etc/mysql/mariadb.conf.d/50-server.cnf << 'EOF'
 
 # Optimisations Laravel
+[mysqld]
 innodb_buffer_pool_size = 256M
 innodb_log_file_size = 64M
 innodb_flush_log_at_trx_commit = 2
 innodb_flush_method = O_DIRECT
-query_cache_type = 1
-query_cache_size = 32M
 max_connections = 200
 EOF
 
-    systemctl enable mysql
-    systemctl restart mysql
+    # Redémarrer MariaDB
+    systemctl restart mariadb
     
-    log "MySQL installé et configuré"
+    log "MariaDB installé et configuré avec succès"
 }
 
 #==============================================================================
@@ -805,7 +814,7 @@ main() {
     install_php
     install_composer
     install_nodejs
-    install_mysql
+    install_mariadb
     configure_redis
     configure_supervisor
     create_nginx_template
